@@ -1,0 +1,201 @@
+# Configuration du Système de Détection de Drones
+# Version: 1.0.0
+
+# ============================================================================
+# ACQUISITION RF (MODULE 1)
+# ============================================================================
+acquisition:
+  # Arguments du périphérique USRP
+  device_args: "type=b200"  # LibreSDR B210mini
+
+  # Taux d'échantillonnage (Hz)
+  sample_rate: 20000000  # 20 MS/s (optimal pour WiFi 20 MHz)
+
+  # Fréquence RX1 - 2.4 GHz (OcuSync 2.0/3.0/4.0 + WiFi Remote ID)
+  rx_freq_2g4: 2437000000  # 2.437 GHz (canal WiFi 6)
+
+  # Fréquence RX2 - 5.8 GHz (OcuSync HD, WiFi 5 GHz)
+  rx_freq_5g8: 5800000000  # 5.8 GHz
+
+  # Gain du récepteur (dB)
+  rx_gain: 50.0  # 50 dB recommandé pour WiFi 2.4 GHz
+
+  # Nombre d'échantillons par acquisition
+  num_samples: 200000  # ~10ms à 20 MS/s (pour capturer beacon WiFi)
+
+  # Canal actif (0 = 2.4 GHz, 1 = 5.8 GHz)
+  active_channel: 0
+
+# ============================================================================
+# PRÉTRAITEMENT (MODULE 2)
+# ============================================================================
+preprocessing:
+  # Suppression du DC offset
+  enable_dc_removal: true
+
+  # Correction des déséquilibres I/Q
+  enable_iq_correction: true
+
+  # Filtre passe-bande (Hz)
+  bandpass_low: 1000000   # 1 MHz
+  bandpass_high: 9000000  # 9 MHz (< Nyquist de 10 MHz pour 20 MS/s)
+
+  # Méthode de normalisation ('rms', 'peak', 'minmax')
+  normalize_method: "rms"
+
+  # Ordre du filtre Butterworth
+  filter_order: 6
+
+# ============================================================================
+# ANALYSE SPECTRALE (MODULE 3)
+# ============================================================================
+spectral_analysis:
+  # Paramètres STFT (Short-Time Fourier Transform)
+  nperseg: 2048  # Longueur de segment
+  noverlap: null  # Null = nperseg/2 (50% overlap)
+  window: "hann"  # Type de fenêtre
+
+  # Détection de rafales
+  burst_detection:
+    threshold_factor: 3.0  # Facteur multiplicatif du bruit
+    min_burst_duration: 0.001  # 1 ms minimum
+
+  # Estimation de bande passante
+  bandwidth_threshold_db: -10.0  # Seuil par rapport au pic
+
+# ============================================================================
+# REMOTE ID (MODULE 4B)
+# ============================================================================
+remote_id:
+  # Activer le décodage Remote ID
+  enabled: true
+
+  # Timeout pour la démodulation WiFi (secondes)
+  demod_timeout: 1.0
+
+  # Validation des données
+  validate_coordinates: true
+  max_altitude_m: 500  # Altitude maximale considérée comme valide
+
+  # === BLE (Bluetooth Low Energy) ===
+  ble:
+    enabled: true
+    scan_interval_secs: 5.0
+
+  # === Wi‑Fi (Beacon / Action / NAN) ===
+  wifi:
+    channels: [1, 6, 11]
+    hop_interval_secs: 5.0
+    include_5ghz: false
+
+# ============================================================================
+# FUSION DE DONNÉES (MODULE 5)
+# ============================================================================
+data_fusion:
+  # Zones restreintes (coordonnées exemple Burkina Faso)
+  restricted_zones:
+    - name: "Zone militaire exemple"
+      center_lat: 12.3714
+      center_lon: -1.5197
+      radius_km: 5.0
+
+    - name: "Aéroport Ouagadougou"
+      center_lat: 12.3532
+      center_lon: -1.5124
+      radius_km: 10.0
+
+  # Seuils d'alerte
+  threat_assessment:
+    high_altitude_m: 120  # AGL
+    high_speed_ms: 20
+    max_operator_distance_m: 5000
+
+# ============================================================================
+# MQTT (MODULE 6)
+# ============================================================================
+mqtt:
+  # Adresse du broker MQTT
+  broker_host: "localhost"
+
+  # Port du broker
+  broker_port: 1883  # Standard: 1883, TLS: 8883
+
+  # ID du client
+  client_id: "drone_detector_001"
+
+  # Authentification (optionnel)
+  username: null
+  password: null
+
+  # Utiliser TLS/SSL
+  use_tls: false
+
+  # Topics MQTT
+  topics:
+    detection: "drone/detection"
+    position: "drone/position"
+    classification: "drone/classification"
+    alert: "drone/alert"
+    health: "system/health"
+
+  # QoS levels
+  qos:
+    detection: 1  # At least once
+    position: 1   # At least once
+    alert: 2      # Exactly once
+    health: 0     # At most once
+
+  # Rétention des messages
+  retain: false
+
+# ============================================================================
+# SYSTÈME
+# ============================================================================
+system:
+  # Intervalle de heartbeat (secondes)
+  heartbeat_interval: 60
+
+  # Seuil de détection SNR (dB)
+  detection_threshold_snr: 15.0  # 15 dB pour WiFi Remote ID (réduire si tests seulement)
+
+  # Logging
+  log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_file: "drone_detection.log"
+
+  # Statistiques
+  stats_interval: 300  # Afficher les stats toutes les 5 minutes
+
+  # Mode de fonctionnement
+  continuous_mode: true  # false = mode acquisition unique
+
+# ============================================================================
+# PERFORMANCES
+# ============================================================================
+performance:
+  # Nombre de threads pour le traitement parallèle
+  num_threads: 4
+
+  # Taille de la queue de traitement
+  processing_queue_size: 10
+
+  # Timeout d'acquisition (secondes)
+  acquisition_timeout: 3.0
+
+# ============================================================================
+# DEBUG & DÉVELOPPEMENT
+# ============================================================================
+debug:
+  # Mode debug
+  enabled: false
+
+  # Sauvegarder les signaux bruts
+  save_raw_signals: false
+  save_path: "data/raw_signals/"
+
+  # Sauvegarder les spectrogrammes
+  save_spectrograms: false
+  spectrogram_path: "data/spectrograms/"
+
+  # Affichage détaillé
+  verbose_detection: false
+  print_features: false

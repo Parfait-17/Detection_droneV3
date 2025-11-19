@@ -1,0 +1,117 @@
+# Configuration TEST - Seuils bas pour tests sans drone réel
+# NE PAS UTILISER EN PRODUCTION
+
+# ============================================================================
+# ACQUISITION RF (MODULE 1)
+# ============================================================================
+acquisition:
+  device_args: "type=b200"
+  sample_rate: 20000000  # 20 MS/s
+  rx_freq_2g4: 2437000000  # Canal 6
+  rx_freq_5g8: 5800000000
+  rx_gain: 60.0  # Gain augmenté pour capter signaux faibles
+  num_samples: 200000
+  active_channel: 0
+
+# ============================================================================
+# PRÉTRAITEMENT (MODULE 2)
+# ============================================================================
+preprocessing:
+  enable_dc_removal: true
+  enable_iq_correction: true
+  bandpass_low: 1000000
+  bandpass_high: 9000000
+  normalize_method: "rms"
+  filter_order: 6
+
+# ============================================================================
+# ANALYSE SPECTRALE (MODULE 3)
+# ============================================================================
+spectral_analysis:
+  nperseg: 2048
+  noverlap: null
+  window: "hann"
+  burst_detection:
+    threshold_factor: 2.0  # Réduit pour détecter signaux faibles
+    min_burst_duration: 0.001
+  bandwidth_threshold_db: -10.0
+
+# ============================================================================
+# REMOTE ID (MODULE 4B)
+# ============================================================================
+remote_id:
+  enabled: true
+  demod_timeout: 1.0
+  validate_coordinates: true
+  max_altitude_m: 500
+
+# ============================================================================
+# FUSION DE DONNÉES (MODULE 5)
+# ============================================================================
+data_fusion:
+  restricted_zones:
+    - name: "Zone test"
+      center_lat: 12.3714
+      center_lon: -1.5197
+      radius_km: 5.0
+  threat_assessment:
+    high_altitude_m: 120
+    high_speed_ms: 20
+    max_operator_distance_m: 5000
+
+# ============================================================================
+# MQTT (MODULE 6)
+# ============================================================================
+mqtt:
+  broker_host: "localhost"
+  broker_port: 1883
+  client_id: "drone_detector_test"
+  username: null
+  password: null
+  use_tls: false
+  topics:
+    detection: "drone/detection"
+    position: "drone/position"
+    classification: "drone/classification"
+    alert: "drone/alert"
+    health: "system/health"
+  qos:
+    detection: 1
+    position: 1
+    alert: 2
+    health: 0
+  retain: false
+
+# ============================================================================
+# SYSTÈME
+# ============================================================================
+system:
+  heartbeat_interval: 60
+
+  # SEUIL RÉDUIT POUR TESTS (⚠️ MODE DEBUG UNIQUEMENT)
+  detection_threshold_snr: 3.0  # ← Réduit de 15 dB à 3 dB (TESTS SEULEMENT!)
+
+  log_level: "DEBUG"  # Mode verbeux
+  log_file: "drone_detection_test.log"
+  stats_interval: 300
+  continuous_mode: true
+
+# ============================================================================
+# PERFORMANCES
+# ============================================================================
+performance:
+  num_threads: 4
+  processing_queue_size: 10
+  acquisition_timeout: 3.0
+
+# ============================================================================
+# DEBUG & DÉVELOPPEMENT
+# ============================================================================
+debug:
+  enabled: true
+  save_raw_signals: false
+  save_path: "data/raw_signals/"
+  save_spectrograms: false
+  spectrogram_path: "data/spectrograms/"
+  verbose_detection: true
+  print_features: false
